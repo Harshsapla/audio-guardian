@@ -142,3 +142,34 @@ app.post('/panic-words', (req, res) => {
   panicWords = newWords;
   res.json({ message: 'Panic words updated successfully' });
 });
+const { OpenAI } = require('openai');
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+app.post('/analyze', upload.single('audio'), async (req, res) => {
+  try {
+    const filePath = req.file.path;
+
+    const transcription = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(filePath),
+      model: 'whisper-1',
+    });
+
+    const transcriptText = transcription.text.toLowerCase();
+    console.log('🔍 Transcribed Text:', transcriptText);
+
+    // Check for panic words
+    const detected = panicWords.find(word => transcriptText.includes(word.toLowerCase()));
+
+    if (detected) {
+      console.log(`🚨 Panic word detected: "${detected}"`);
+      // (In future) trigger SMS, email, etc.
+      return res.json({ alert: true, word: detected });
+    } else {
+      return res.json({ alert: false, text: transcriptText });
+    }
+
+  } catch (err) {
+    console.error('❌ Error analyzing audio:', err.message);
+    res.status(500).json({ message: 'Whisper API failed' });
+  }
+});
