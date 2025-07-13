@@ -126,3 +126,19 @@ cron.schedule("0 2 * * *", () => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+let panicWords = ['help', 'emergency']; // Default examples
+
+app.get('/panic-words', (req, res) => {
+  res.json({ panicWords });
+});
+
+app.post('/panic-words', (req, res) => {
+  const { panicWords: newWords } = req.body;
+
+  if (!Array.isArray(newWords)) {
+    return res.status(400).json({ message: 'panicWords must be an array' });
+  }
+
+  panicWords = newWords;
+  res.json({ message: 'Panic words updated successfully' });
+});
